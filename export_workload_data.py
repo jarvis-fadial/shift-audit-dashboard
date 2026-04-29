@@ -25,7 +25,9 @@ payload = {
     'dateMin': df.date.min().isoformat(),
     'dateMax': df.date.max().isoformat(),
     'assumptions': [
-        'Backup shifts count as shifts/backups but contribute 0.0 included hours.',
+        'Backup shifts count as shifts/backups and contribute 8.0 included hours.',
+        'Every worked shift other than TEC and Backup includes 2.0 hours of cleanup time.',
+        'Annual leave adjustments are entered interactively in the dashboard by pay period; 3 AL days reduces shift burden by 2 shifts.',
         'Off/Admin entries are retained in detail but excluded from shift and hour totals.',
         'Federal pay periods use the NFC-style 14-day cycle anchored at 2023 PP01 = 2023-01-01.',
         'This audits the schedule grid, not payroll/timecard truth.'

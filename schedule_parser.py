@@ -44,6 +44,16 @@ def parse_hours(text: str) -> float | None:
     return round((end - start) / 60, 2)
 
 
+def billable_shift_hours(raw: str, typ: str, parsed_hours: float) -> float:
+    if typ == "Backup":
+        return 8.0
+    if typ == "Admin-Off":
+        return 0.0
+    if typ == "TEC":
+        return float(parsed_hours)
+    return float(parsed_hours) + 2.0
+
+
 def shift_type(text: str) -> str:
     l = str(text).strip().lower()
     if "backup" in l:
@@ -154,7 +164,7 @@ def extract_records(workbook_file, selected_staff: Iterable[str] | None = None) 
                 if parsed is None:
                     parsed = 0.0
                 excluded = typ == "Admin-Off"
-                included_hours = 0.0 if excluded or typ == "Backup" else parsed
+                included_hours = billable_shift_hours(raw, typ, parsed)
                 shift_count = 0 if excluded else 1
                 label, pp_start, pp_end = pay_period_for(d)
                 records.append({
