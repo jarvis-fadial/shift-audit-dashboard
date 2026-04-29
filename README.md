@@ -1,40 +1,36 @@
-# Shift Audit Dashboard
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Static dashboard for auditing VA/QGenda Grid By Staff schedule exports by federal pay period.
+## Getting Started
 
-## Data refresh
-
-1. In the CDP-enabled Chrome session, log into QGenda and generate **Schedule → Reports → Grid By Staff → Excel** through today's date.
-2. Save the captured workbook from browser memory:
+First, run the development server:
 
 ```bash
-node scripts/save-qgenda-report-from-browser.mjs schedule.xlsx
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-3. Rebuild the dashboard payload:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-uv run --with pandas --with openpyxl python export_workload_data.py
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Backup shifts are counted as shifts/backups but contribute **0.0 included hours**.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Verify
+## Learn More
 
-```bash
-uv run --with pandas --with openpyxl --with pytest python -m pytest test_schedule_parser.py -q
-npm run build
-```
+To learn more about Next.js, take a look at the following resources:
 
-`npm run lint` currently reports pre-existing React Compiler lint issues in scaffolded components; production build passes.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Deploy GitHub Pages
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-```bash
-GITHUB_PAGES=true npm run build
-git worktree add /tmp/shift-audit-gh-pages gh-pages
-rsync -a --delete out/ /tmp/shift-audit-gh-pages/
-touch /tmp/shift-audit-gh-pages/.nojekyll
-cd /tmp/shift-audit-gh-pages && git add . && git commit -m "deploy: update workload dashboard" && git push origin gh-pages
-cd - && git worktree remove /tmp/shift-audit-gh-pages
-```
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
