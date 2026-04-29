@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "uv run --with pandas --with openpyxl python export_workload_data.py",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
