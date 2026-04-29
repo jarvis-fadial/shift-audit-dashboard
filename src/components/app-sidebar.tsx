@@ -1,11 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { BarChart3, CalendarRange, Gauge, Info, ListChecks, Stethoscope, Users } from "lucide-react"
+import { BarChart3, CalendarRange, ChevronsUpDown, Gauge, Info, ListChecks, Stethoscope, Users } from "lucide-react"
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -27,9 +29,19 @@ const nav = [
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   activeTab?: string
   onTabChange?: (value: string) => void
+  primary?: string
+  staff?: string[]
+  onPrimaryChange?: (value: string) => void
 }
 
-export function AppSidebar({ activeTab = "overview", onTabChange, ...props }: AppSidebarProps) {
+export function AppSidebar({
+  activeTab = "overview",
+  onTabChange,
+  primary,
+  staff = [],
+  onPrimaryChange,
+  ...props
+}: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -59,6 +71,30 @@ export function AppSidebar({ activeTab = "overview", onTabChange, ...props }: Ap
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <div className="px-2 pb-2">
+          <div className="mb-2 flex items-center gap-2 text-sm">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              {(primary ?? "?").slice(0, 1)}
+            </div>
+            <div className="grid flex-1 leading-tight">
+              <span className="truncate font-medium">{primary ?? "Select user"}</span>
+              <span className="truncate text-xs text-muted-foreground">Primary schedule</span>
+            </div>
+            <ChevronsUpDown className="size-4 text-muted-foreground" />
+          </div>
+          <Select value={primary} onValueChange={(value) => value && onPrimaryChange?.(value)}>
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue placeholder="Switch user" />
+            </SelectTrigger>
+            <SelectContent>
+              {staff.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   )
 }
