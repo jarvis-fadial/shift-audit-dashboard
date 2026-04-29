@@ -3,7 +3,9 @@
 import * as React from "react"
 import { BarChart3, CalendarRange, ChevronsUpDown, Gauge, Info, ListChecks, Stethoscope, Users } from "lucide-react"
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Sidebar,
   SidebarContent,
@@ -42,6 +44,10 @@ export function AppSidebar({
   onPrimaryChange,
   ...props
 }: AppSidebarProps) {
+  const [open, setOpen] = React.useState(false)
+  const [query, setQuery] = React.useState("")
+  const filteredStaff = staff.filter((name) => name.toLowerCase().includes(query.toLowerCase())).slice(0, 30)
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -72,28 +78,45 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="px-2 pb-2">
-          <div className="mb-2 flex items-center gap-2 text-sm">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              {(primary ?? "?").slice(0, 1)}
-            </div>
-            <div className="grid flex-1 leading-tight">
-              <span className="truncate font-medium">{primary ?? "Select user"}</span>
-              <span className="truncate text-xs text-muted-foreground">Primary schedule</span>
-            </div>
-            <ChevronsUpDown className="size-4 text-muted-foreground" />
-          </div>
-          <Select value={primary} onValueChange={(value) => value && onPrimaryChange?.(value)}>
-            <SelectTrigger className="w-full bg-background">
-              <SelectValue placeholder="Switch user" />
-            </SelectTrigger>
-            <SelectContent>
-              {staff.map((name) => (
-                <SelectItem key={name} value={name}>{name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger render={<SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" />}>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  {(primary ?? "?").slice(0, 1)}
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{primary ?? "Select user"}</span>
+                  <span className="truncate text-xs text-muted-foreground">Primary schedule</span>
+                </div>
+                <ChevronsUpDown className="ml-auto size-4" />
+              </PopoverTrigger>
+              <PopoverContent side="top" align="start" className="w-64 p-2">
+                <div className="space-y-2">
+                  <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search staff…" />
+                  <div className="max-h-72 overflow-y-auto rounded-md border p-1">
+                    {filteredStaff.map((name) => (
+                      <Button
+                        key={name}
+                        type="button"
+                        variant={name === primary ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => {
+                          onPrimaryChange?.(name)
+                          setOpen(false)
+                          setQuery("")
+                        }}
+                      >
+                        {name}
+                      </Button>
+                    ))}
+                    {!filteredStaff.length && <p className="p-2 text-sm text-muted-foreground">No staff found.</p>}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   )
