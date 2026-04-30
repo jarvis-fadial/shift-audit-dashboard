@@ -33,7 +33,8 @@ def _minutes(h: str, minute: str | None, ap: str) -> int:
 def parse_hours(text: str) -> float | None:
     s = str(text).replace("–", "-").replace("—", "-")
     if "backup" in s.lower():
-        return 8.0
+        # Backup/call shifts count as shifts and backup burden, but no longer contribute scheduled hours.
+        return 0.0
     m = TIME_RE.search(s)
     if not m:
         return None
@@ -46,7 +47,7 @@ def parse_hours(text: str) -> float | None:
 
 def billable_shift_hours(raw: str, typ: str, parsed_hours: float) -> float:
     if typ == "Backup":
-        return 8.0
+        return 0.0
     if typ == "Admin-Off":
         return 0.0
     if typ == "TEC":
@@ -125,8 +126,10 @@ def find_staff_rows(ws) -> dict[str, int]:
         if not name:
             continue
         name_s = str(name).strip()
-        if not re.match(r"^[A-Za-z][A-Za-z .'-]{1,40}$", name_s):
+        if not re.match(r"^[A-Za-z][A-Za-z .,'-]{1,60}$", name_s):
             continue
+        if "," in name_s:
+            name_s = name_s.split(",", 1)[0].strip()
         if name_s.lower() in {"day", "night", "swing", "backup"}:
             continue
         # Include named rows even if first visible months are blank; require either row or continuation has shifts somewhere.
