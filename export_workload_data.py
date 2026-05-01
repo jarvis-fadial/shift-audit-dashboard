@@ -26,8 +26,10 @@ payload = {
     'dateMax': df.date.max().isoformat(),
     'assumptions': [
         'Backup shifts count as shifts/backups, but contribute 0.0 included hours.',
-        'Every worked shift other than TEC and Backup includes 2.0 hours of cleanup time.',
-        'Annual leave adjustments are entered interactively in the dashboard by pay period; each AL day reduces burden by one 10h shift-equivalent.',
+        'Worked shift hour totals use the parsed schedule duration; no extra cleanup time is added.',
+        'Annual leave adjustments are entered interactively in the dashboard by pay period; each AL day reduces burden by 0.65 shifts.',
+        'Each federal holiday in a pay period reduces effective AL usage by one AL day before applying the 0.65-shift credit.',
+        'The adjusted-burden chart includes a default 6.5-shift/pay-period reference target.',
         'Off/Admin entries are retained in detail but excluded from shift and hour totals.',
         'Federal pay periods use the NFC-style 14-day cycle anchored at 2023 PP01 = 2023-01-01.',
         'This audits the schedule grid, not payroll/timecard truth.'

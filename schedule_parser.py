@@ -13,6 +13,8 @@ import pandas as pd
 TIME_RE = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*([ap])\s*-\s*(\d{1,2})(?::(\d{2}))?\s*([ap])", re.I)
 MONTH_RE = re.compile(r"^[A-Za-z]{3}-\d{2}$")
 ANCHOR = date(2023, 1, 1)
+AL_SHIFT_CREDIT_PER_DAY = 0.65
+BASELINE_SHIFT_TARGET_PER_PAY_PERIOD = 6.5
 COLUMNS = [
     "person", "date", "dow", "pp", "pp_start", "pp_end", "month", "raw", "type",
     "parsed_hours", "included_hours", "shift_count", "backup_count", "weekend", "night", "source_row",
@@ -33,7 +35,6 @@ def _minutes(h: str, minute: str | None, ap: str) -> int:
 def parse_hours(text: str) -> float | None:
     s = str(text).replace("–", "-").replace("—", "-")
     if "backup" in s.lower():
-        # Backup/call shifts count as shifts and backup burden, but no longer contribute scheduled hours.
         return 0.0
     m = TIME_RE.search(s)
     if not m:
@@ -50,9 +51,61 @@ def billable_shift_hours(raw: str, typ: str, parsed_hours: float) -> float:
         return 0.0
     if typ == "Admin-Off":
         return 0.0
-    if typ == "TEC":
-        return float(parsed_hours)
-    return float(parsed_hours) + 2.0
+    return float(parsed_hours)
+
+
+def annual_leave_shift_credit(al_days: float, federal_holidays: int = 0) -> float:
+    effective_days = max(0.0, float(al_days) - float(federal_holidays))
+    return round(effective_days * AL_SHIFT_CREDIT_PER_DAY, 2)
+
+
+def _nth_weekday(year: int, month: int, weekday: int, nth: int) -> date:
+    first = date(year, month, 1)
+    offset = (weekday - first.weekday()) % 7
+    return first + timedelta(days=offset + 7 * (nth - 1))
+
+
+def _last_weekday(year: int, month: int, weekday: int) -> date:
+    last = date(year, month, calendar.monthrange(year, month)[1])
+    offset = (last.weekday() - weekday) % 7
+    return last - timedelta(days=offset)
+
+
+def _observed(dt: date) -> date:
+    if dt.weekday() == 5:
+        return dt - timedelta(days=1)
+    if dt.weekday() == 6:
+        return dt + timedelta(days=1)
+    return dt
+
+
+def federal_holidays_for_year(year: int) -> list[tuple[date, str]]:
+    return [
+        (_observed(date(year, 1, 1)), "New Year's Day"),
+        (_nth_weekday(year, 1, 0, 3), "Martin Luther King Jr. Day"),
+        (_nth_weekday(year, 2, 0, 3), "Washington's Birthday"),
+        (_last_weekday(year, 5, 0), "Memorial Day"),
+        (_observed(date(year, 6, 19)), "Juneteenth National Independence Day"),
+        (_observed(date(year, 7, 4)), "Independence Day"),
+        (_nth_weekday(year, 9, 0, 1), "Labor Day"),
+        (_nth_weekday(year, 10, 0, 2), "Columbus Day"),
+        (_observed(date(year, 11, 11)), "Veterans Day"),
+        (_nth_weekday(year, 11, 3, 4), "Thanksgiving Day"),
+        (_observed(date(year, 12, 25)), "Christmas Day"),
+    ]
+
+
+def federal_holidays_between(start: date, end: date) -> list[tuple[date, str]]:
+    holidays: dict[date, str] = {}
+    for year in range(start.year - 1, end.year + 2):
+        for holiday_date, name in federal_holidays_for_year(year):
+            if start <= holiday_date <= end:
+                holidays[holiday_date] = name
+    return sorted(holidays.items())
+
+
+def federal_holiday_count(start: date, end: date) -> int:
+    return len(federal_holidays_between(start, end))
 
 
 def shift_type(text: str) -> str:
@@ -193,12 +246,13 @@ def extract_records(workbook_file, selected_staff: Iterable[str] | None = None) 
 
 def aggregate_pay_periods(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
-        return pd.DataFrame(columns=["person", "pp", "pp_start", "pp_end", "shifts", "hours", "backups", "weekends", "nights"])
+        return pd.DataFrame(columns=["person", "pp", "pp_start", "pp_end", "shifts", "hours", "backups", "weekends", "nights", "federal_holidays"])
     out = df.groupby(["person", "pp", "pp_start", "pp_end"], as_index=False).agg(
         shifts=("shift_count", "sum"), hours=("included_hours", "sum"), backups=("backup_count", "sum"), weekends=("weekend", "sum"), nights=("night", "sum")
     )
     out = out[out["shifts"] > 0].sort_values(["pp_start", "person"])
     out["hours"] = out["hours"].round(2)
+    out["federal_holidays"] = out.apply(lambda r: federal_holiday_count(r["pp_start"], r["pp_end"]), axis=1)
     return out
 
 
